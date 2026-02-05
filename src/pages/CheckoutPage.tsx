@@ -11,7 +11,7 @@ import { useCartStore } from "@/store/cartStore";
 
 export function CheckoutPage() {
     const navigate = useNavigate();
-    const { items, clearCart } = useCartStore();
+    const { items, clearCart, appliedCoupon, getTotal, getDiscount } = useCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Form state
@@ -52,14 +52,13 @@ export function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // Calculate totals
-            const subtotal = items.reduce(
-                (total, item) => total + item.ticketType.price * item.quantity,
-                0
-            );
+            // Calculate totals with discount
+            const subtotal = getTotal();
+            const discount = getDiscount();
+            const discountedSubtotal = subtotal - discount;
             const serviceFee = subtotal * 0.1;
             const tax = subtotal * 0.08;
-            const total = subtotal + serviceFee + tax;
+            const total = discountedSubtotal + serviceFee + tax;
 
             // Step 1: Process payment first
             const paymentResponse = await fetch("http://localhost:3001/api/payments", {
@@ -101,10 +100,16 @@ export function CheckoutPage() {
                 })),
                 totals: {
                     subtotal,
+                    discount,
                     serviceFee,
                     tax,
                     total,
                 },
+                coupon: appliedCoupon ? {
+                    code: appliedCoupon.code,
+                    type: appliedCoupon.type,
+                    value: appliedCoupon.value,
+                } : undefined,
                 paymentTransactionId: paymentResult.transactionId,
             };
 

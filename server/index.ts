@@ -18,6 +18,32 @@ interface OrderItem {
     price: number;
 }
 
+interface Order {
+    id: string;
+    customer: {
+        email: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
+    };
+    items: OrderItem[];
+    totals: {
+        subtotal: number;
+        discount?: number;
+        serviceFee: number;
+        tax: number;
+        total: number;
+    };
+    coupon?: {
+        code: string;
+        type: string;
+        value: number;
+    };
+    paymentTransactionId: string;
+    status: "confirmed" | "refunded";
+    createdAt: string;
+}
+
 interface OrderRequest {
     customer: {
         email: string;
@@ -28,9 +54,15 @@ interface OrderRequest {
     items: OrderItem[];
     totals: {
         subtotal: number;
+        discount?: number;
         serviceFee: number;
         tax: number;
         total: number;
+    };
+    coupon?: {
+        code: string;
+        type: string;
+        value: number;
     };
     paymentTransactionId: string;
 }
@@ -39,6 +71,15 @@ interface PaymentRequest {
     amount: number;
     paymentMethod?: string;
 }
+
+// ============================================
+// IN-MEMORY ORDER STORE
+// ============================================
+// Stores orders in memory for demo purposes.
+// Orders persist while server is running but reset on restart.
+// ============================================
+
+const orders = new Map<string, Order>();
 
 // ============================================
 // PAYMENT PROCESSING ENDPOINT
@@ -77,35 +118,96 @@ app.post("/api/payments", (req, res) => {
 // ORDER SUBMISSION ENDPOINT
 // ============================================
 // Creates a new order with customer info, cart items, and totals.
-// Returns an order ID and confirmation details.
+// Stores order in memory and returns order details.
 // ============================================
 
 app.post("/api/orders", (req, res) => {
     const orderData: OrderRequest = req.body;
 
+    // Generate a mock order ID
+    const orderId = `EVT-${Date.now().toString(36).toUpperCase()}`;
+
+    // Create the full order object
+    const order: Order = {
+        id: orderId,
+        customer: orderData.customer,
+        items: orderData.items,
+        totals: orderData.totals,
+        coupon: orderData.coupon,
+        paymentTransactionId: orderData.paymentTransactionId,
+        status: "confirmed",
+        createdAt: new Date().toISOString(),
+    };
+
+    // Store order in memory
+    orders.set(orderId, order);
+
     // Log the incoming order for debugging
     console.log("\n========================================");
     console.log("📦 NEW ORDER RECEIVED");
     console.log("========================================");
+    console.log("Order ID:", orderId);
     console.log("Customer:", orderData.customer);
     console.log("Items:", JSON.stringify(orderData.items, null, 2));
     console.log("Totals:", orderData.totals);
     console.log("Payment Transaction ID:", orderData.paymentTransactionId);
+    console.log("Total Orders in Store:", orders.size);
     console.log("========================================\n");
-
-    // Generate a mock order ID
-    const orderId = `EVT-${Date.now().toString(36).toUpperCase()}`;
 
     // Simulate processing delay
     setTimeout(() => {
         res.json({
             success: true,
             orderId,
+            order,
             message: "Order created successfully",
-            paymentTransactionId: orderData.paymentTransactionId,
             timestamp: new Date().toISOString(),
         });
     }, 500);
+});
+
+// ============================================
+// GET ORDERS BY EMAIL
+// ============================================
+// Fetches all orders for a given email address.
+// Used by the Account page to display order history.
+// ============================================
+
+app.get("/api/orders", (req, res) => {
+    const email = req.query.email as string;
+
+    if (!email) {
+        res.status(400).json({ error: "Email query parameter is required" });
+        return;
+    }
+
+    const userOrders = [...orders.values()]
+        .filter((order) => order.customer.email.toLowerCase() === email.toLowerCase())
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    console.log(`\n📋 Fetching orders for: ${email}`);
+    console.log(`   Found ${userOrders.length} orders\n`);
+
+    res.json(userOrders);
+});
+
+// ============================================
+// GET SINGLE ORDER
+// ============================================
+// Fetches a single order by ID.
+// ============================================
+
+app.get("/api/orders/:orderId", (req, res) => {
+    const { orderId } = req.params;
+
+    const order = orders.get(orderId);
+
+    if (!order) {
+        res.status(404).json({ error: "Order not found" });
+        return;
+    }
+
+    res.json(order);
 });
 
 // Health check endpoint
@@ -118,5 +220,6 @@ app.listen(PORT, () => {
     console.log(`\n🚀 Server running at http://localhost:${PORT}`);
     console.log(`   Health check: http://localhost:${PORT}/api/health`);
     console.log(`   Payments API: POST http://localhost:${PORT}/api/payments`);
-    console.log(`   Orders API: POST http://localhost:${PORT}/api/orders\n`);
+    console.log(`   Orders API: POST http://localhost:${PORT}/api/orders`);
+    console.log(`   Orders API: GET http://localhost:${PORT}/api/orders?email=...\n`);
 });

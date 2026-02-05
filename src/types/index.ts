@@ -23,3 +23,39 @@ export interface CartItem {
   ticketType: TicketType;
   quantity: number;
 }
+
+// Order-related types
+export interface OrderItem {
+  eventId: string;
+  eventName: string;
+  ticketTypeId: string;
+  ticketTypeName: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  customer: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  };
+  items: OrderItem[];
+  totals: {
+    subtotal: number;
+    discount?: number;
+    serviceFee: number;
+    tax: number;
+    total: number;
+  };
+  coupon?: {
+    code: string;
+    type: string;
+    value: number;
+  };
+  paymentTransactionId: string;
+  status: "confirmed" | "refunded";
+  createdAt: string;
+}

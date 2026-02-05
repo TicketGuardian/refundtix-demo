@@ -2,19 +2,22 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cartStore";
+import { CouponInput } from "./CouponInput";
 
 interface CartSummaryProps {
     showCheckoutButton?: boolean;
+    showCouponInput?: boolean;
 }
 
-export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
-    const { items, getTotal } = useCartStore();
+export function CartSummary({ showCheckoutButton = true, showCouponInput = true }: CartSummaryProps) {
+    const { items, getTotal, appliedCoupon, getDiscount } = useCartStore();
     const subtotal = getTotal();
+    const discount = getDiscount();
 
     // Placeholder values for integration points
     const serviceFee = subtotal * 0.1; // 10% service fee placeholder
     const tax = subtotal * 0.08; // 8% tax placeholder
-    const total = subtotal + serviceFee + tax;
+    const total = subtotal - discount + serviceFee + tax;
 
     if (items.length === 0) {
         return null;
@@ -32,10 +35,20 @@ export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
                     </span>
                 </div>
 
+                {appliedCoupon && discount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-emerald-600">
+                            Discount ({appliedCoupon.code})
+                        </span>
+                        <span className="font-medium text-emerald-600">
+                            -${discount.toFixed(2)}
+                        </span>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-600">
                         Service Fee
-                        <span className="ml-1 text-xs text-neutral-400">(placeholder)</span>
                     </span>
                     <span className="font-medium text-neutral-900">
                         ${serviceFee.toFixed(2)}
@@ -45,7 +58,6 @@ export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-600">
                         Tax
-                        <span className="ml-1 text-xs text-neutral-400">(placeholder)</span>
                     </span>
                     <span className="font-medium text-neutral-900">
                         ${tax.toFixed(2)}
@@ -61,6 +73,13 @@ export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
                     ${total.toFixed(2)}
                 </span>
             </div>
+
+            {showCouponInput && (
+                <>
+                    <Separator className="my-4" />
+                    <CouponInput />
+                </>
+            )}
 
             {showCheckoutButton && (
                 <Button asChild className="mt-6 w-full" size="lg">
