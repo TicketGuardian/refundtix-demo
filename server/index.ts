@@ -210,6 +210,51 @@ app.get("/api/orders/:orderId", (req, res) => {
     res.json(order);
 });
 
+// ============================================
+// CANCEL ORDER ENDPOINT
+// ============================================
+// Cancels an order by updating its status to "refunded".
+// In production, this would also trigger a refund via payment provider.
+// ============================================
+
+app.post("/api/orders/:orderId/cancel", (req, res) => {
+    const { orderId } = req.params;
+
+    const order = orders.get(orderId);
+
+    if (!order) {
+        res.status(404).json({ error: "Order not found" });
+        return;
+    }
+
+    if (order.status === "refunded") {
+        res.status(400).json({ error: "Order has already been cancelled" });
+        return;
+    }
+
+    // Update order status to refunded
+    order.status = "refunded";
+    orders.set(orderId, order);
+
+    console.log("\n========================================");
+    console.log("❌ ORDER CANCELLED");
+    console.log("========================================");
+    console.log("Order ID:", orderId);
+    console.log("Customer:", order.customer.email);
+    console.log("Refund Amount:", order.totals.total);
+    console.log("========================================\n");
+
+    // Simulate processing delay
+    setTimeout(() => {
+        res.json({
+            success: true,
+            order,
+            message: "Order cancelled successfully",
+            timestamp: new Date().toISOString(),
+        });
+    }, 500);
+});
+
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -221,5 +266,6 @@ app.listen(PORT, () => {
     console.log(`   Health check: http://localhost:${PORT}/api/health`);
     console.log(`   Payments API: POST http://localhost:${PORT}/api/payments`);
     console.log(`   Orders API: POST http://localhost:${PORT}/api/orders`);
-    console.log(`   Orders API: GET http://localhost:${PORT}/api/orders?email=...\n`);
+    console.log(`   Orders API: GET http://localhost:${PORT}/api/orders?email=...`);
+    console.log(`   Cancel Order: POST http://localhost:${PORT}/api/orders/:orderId/cancel\n`);
 });

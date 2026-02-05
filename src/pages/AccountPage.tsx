@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Package, Search, Calendar, MapPin, Mail } from "lucide-react";
+import { User, Package, Search, Calendar, MapPin, Mail, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,43 @@ export function AccountPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+
+    const handleCancelOrder = async (orderId: string) => {
+        setCancellingOrderId(orderId);
+
+        try {
+            const response = await fetch(
+                `http://localhost:3001/api/orders/${orderId}/cancel`,
+                { method: "POST" }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to cancel order");
+            }
+
+            const data = await response.json();
+
+            // Update the order in local state
+            setOrders((prevOrders) =>
+                prevOrders.map((order) =>
+                    order.id === orderId ? data.order : order
+                )
+            );
+
+            toast.success("Order cancelled successfully", {
+                description: `Order ${orderId} has been refunded.`,
+            });
+        } catch (err) {
+            console.error("Error cancelling order:", err);
+            toast.error("Failed to cancel order", {
+                description: err instanceof Error ? err.message : "Please try again.",
+            });
+        } finally {
+            setCancellingOrderId(null);
+        }
+    };
 
     const handleLookup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -176,10 +214,31 @@ export function AccountPage() {
                                                         Ordered on {formatDate(order.createdAt)}
                                                     </p>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="flex flex-col items-end gap-2">
                                                     <p className="text-lg font-semibold text-neutral-900">
                                                         ${order.totals.total.toFixed(2)}
                                                     </p>
+                                                    {order.status === "confirmed" && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleCancelOrder(order.id)}
+                                                            disabled={cancellingOrderId === order.id}
+                                                            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                                        >
+                                                            {cancellingOrderId === order.id ? (
+                                                                <>
+                                                                    <span className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                                                                    Cancelling...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                                                                    Cancel Order
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
 
