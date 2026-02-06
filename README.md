@@ -22,6 +22,7 @@ Event ticketing demo site.
 
 - Percentage-based discounts (e.g., SAVE10 = 10% off, WELCOME = 15% off)
 - Fixed amount discounts (e.g., FLAT20 = $20 off)
+- Free order code (FREE = 100% off)
 - Real-time discount calculation in cart summary
 
 ### 4. Checkout Flow

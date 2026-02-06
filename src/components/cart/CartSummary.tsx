@@ -13,11 +13,12 @@ export function CartSummary({ showCheckoutButton = true, showCouponInput = true 
     const { items, getTotal, appliedCoupon, getDiscount } = useCartStore();
     const subtotal = getTotal();
     const discount = getDiscount();
+    const discountedSubtotal = subtotal - discount;
 
-    // Placeholder values for integration points
-    const serviceFee = subtotal * 0.1; // 10% service fee placeholder
-    const tax = subtotal * 0.08; // 8% tax placeholder
-    const total = subtotal - discount + serviceFee + tax;
+    // Fees and tax calculated on discounted subtotal
+    const serviceFee = discountedSubtotal * 0.1; // 10% service fee
+    const tax = discountedSubtotal * 0.08; // 8% tax
+    const total = discountedSubtotal + serviceFee + tax;
 
     if (items.length === 0) {
         return null;

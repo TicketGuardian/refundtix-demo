@@ -9,6 +9,7 @@ export const VALID_COUPONS: Coupon[] = [
   { code: "SAVE10", type: "percentage", value: 10, description: "10% off" },
   { code: "FLAT20", type: "fixed", value: 20, description: "$20 off" },
   { code: "WELCOME", type: "percentage", value: 15, description: "15% off" },
+  { code: "FREE", type: "percentage", value: 100, description: "100% off" },
 ];
 
 export function findCoupon(code: string): Coupon | undefined {

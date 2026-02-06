@@ -56,8 +56,9 @@ export function CheckoutPage() {
             const subtotal = getTotal();
             const discount = getDiscount();
             const discountedSubtotal = subtotal - discount;
-            const serviceFee = subtotal * 0.1;
-            const tax = subtotal * 0.08;
+            // Fees and tax calculated on discounted subtotal
+            const serviceFee = discountedSubtotal * 0.1;
+            const tax = discountedSubtotal * 0.08;
             const total = discountedSubtotal + serviceFee + tax;
 
             // Step 1: Process payment first
